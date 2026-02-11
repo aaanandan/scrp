@@ -4,7 +4,8 @@
   "description": "Import Facebook page posts into CMS",
   "main": "facebook-to-cms-importer.js",
   "scripts": {
-    "start": "node facebook-to-cms-importer.js"
+    "start": "node facebook-to-cms-importer.js",
+    "scrape": "node scrape-only.js"
   },
   "dependencies": {
     "puppeteer": "^21.7.0",

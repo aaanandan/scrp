@@ -1,39 +1,70 @@
 const axios = require('axios');
 
-const CONFIG = {
-  CMS_BASE_URL: 'http://135.181.129.60:3000',
-  API_KEY: 'kec-M3PEi4pscirfodDGM35NVWSDsdZv',
-  DEFAULT_CATEGORY: 1
-};
+const PROD_API_KEY = 'kec-5UdyrLbifWUIGnKyjLOR4w4oPj36';
+const DEFAULT_CATEGORY = 1;
+
+const ENDPOINTS = [
+  { name: 'PROD (ecitizen.kailasa.ai)', baseUrl: 'https://ecitizen.kailasa.ai', apiKey: PROD_API_KEY },
+  { name: 'ALT (135.181.129.60:3000)', baseUrl: 'http://135.181.129.60:3000', apiKey: PROD_API_KEY }
+];
+
+async function testEndpoint(endpoint) {
+  console.log('='.repeat(60));
+  console.log(`TESTING: ${endpoint.name}`);
+  console.log(`URL: ${endpoint.baseUrl}`);
+  console.log('='.repeat(60));
+
+  // Step 1: Test API connectivity
+  console.log('\n[1/3] Testing API connectivity...');
+  try {
+    const healthCheck = await axios.get(`${endpoint.baseUrl}/api/cms/posts`, {
+      headers: { 'X-API-Key': endpoint.apiKey },
+      timeout: 15000
+    });
+    console.log(`  OK - API responded with status ${healthCheck.status}`);
+    console.log(`  Existing posts count: ${healthCheck.data?.docs?.length || healthCheck.data?.totalDocs || 'unknown'}`);
+    return { reachable: true, endpoint };
+  } catch (error) {
+    console.log(`  Response status: ${error.response?.status || 'N/A'}`);
+    console.log(`  Message: ${error.response?.data?.message || error.response?.data || error.message}`);
+    return { reachable: false, endpoint };
+  }
+}
 
 async function testCMSApi() {
   console.log('='.repeat(60));
   console.log('CMS API CONNECTIVITY & CONTENT CREATION TEST');
-  console.log('='.repeat(60));
-  console.log(`Target: ${CONFIG.CMS_BASE_URL}\n`);
+  console.log('API Key: kec-5Udyr...j36 (prod)');
+  console.log('='.repeat(60) + '\n');
 
-  // Step 1: Test API connectivity
-  console.log('[1/4] Testing API connectivity...');
-  try {
-    const healthCheck = await axios.get(`${CONFIG.CMS_BASE_URL}/api/cms/posts`, {
-      headers: { 'X-API-Key': CONFIG.API_KEY },
-      timeout: 15000
-    });
-    console.log(`  OK - API responded with status ${healthCheck.status}`);
-    console.log(`  Existing posts count: ${healthCheck.data?.docs?.length || healthCheck.data?.totalDocs || 'unknown'}\n`);
-  } catch (error) {
-    console.log(`  Response status: ${error.response?.status || 'N/A'}`);
-    console.log(`  Message: ${error.response?.data?.message || error.message}\n`);
+  // Step 1: Test connectivity on both endpoints, pick the first that works
+  let workingEndpoint = null;
+  for (const ep of ENDPOINTS) {
+    const result = await testEndpoint(ep);
+    if (result.reachable) {
+      workingEndpoint = result.endpoint;
+      break;
+    }
+    console.log('');
   }
 
+  if (!workingEndpoint) {
+    console.log('\nNeither endpoint is reachable. Cannot proceed with post creation.');
+    console.log('Both returned 403 "Host not allowed" - this environment\'s IP is not whitelisted.');
+    return;
+  }
+
+  const CONFIG = { CMS_BASE_URL: workingEndpoint.baseUrl, API_KEY: workingEndpoint.apiKey };
+  console.log(`\nUsing working endpoint: ${CONFIG.CMS_BASE_URL}\n`);
+
   // Step 2: Create sample test posts (simulating Facebook imports)
-  console.log('[2/4] Creating sample posts to test the import pipeline...\n');
+  console.log('[2/3] Creating sample posts to test the import pipeline...\n');
 
   const samplePosts = [
     {
       title: 'Test Import - Spiritual Discourse on Consciousness',
       status: 'published',
-      categories: [CONFIG.DEFAULT_CATEGORY],
+      categories: [DEFAULT_CATEGORY],
       publishedDate: new Date('2025-10-15T10:00:00').toISOString(),
       content: {
         root: {
@@ -67,7 +98,7 @@ async function testCMSApi() {
     {
       title: 'Test Import - Morning Meditation Session Update',
       status: 'published',
-      categories: [CONFIG.DEFAULT_CATEGORY],
+      categories: [DEFAULT_CATEGORY],
       publishedDate: new Date('2025-10-20T08:00:00').toISOString(),
       content: {
         root: {
@@ -101,7 +132,7 @@ async function testCMSApi() {
     {
       title: 'Test Import - Community Event Announcement',
       status: 'published',
-      categories: [CONFIG.DEFAULT_CATEGORY],
+      categories: [DEFAULT_CATEGORY],
       publishedDate: new Date('2025-11-01T14:00:00').toISOString(),
       content: {
         root: {
@@ -169,7 +200,7 @@ async function testCMSApi() {
   }
 
   // Step 3: Verify created content by fetching posts
-  console.log('\n[3/4] Verifying created content via GET /api/cms/posts...\n');
+  console.log('\n[3/3] Verifying created content via GET /api/cms/posts...\n');
   try {
     const response = await axios.get(`${CONFIG.CMS_BASE_URL}/api/cms/posts`, {
       headers: { 'X-API-Key': CONFIG.API_KEY },
@@ -197,8 +228,8 @@ async function testCMSApi() {
     console.log(`  Failed to verify: ${error.response?.status || ''} ${error.response?.data?.message || error.message}`);
   }
 
-  // Step 4: Summary
-  console.log('\n[4/4] REPORT');
+  // Summary
+  console.log('\nREPORT');
   console.log('='.repeat(60));
   console.log(`CMS Base URL:          ${CONFIG.CMS_BASE_URL}`);
   console.log(`API Endpoint:          ${CONFIG.CMS_BASE_URL}/api/cms/posts`);

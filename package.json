@@ -1,0 +1,14 @@
+{
+  "name": "facebook-to-cms-importer",
+  "version": "1.0.0",
+  "description": "Import Facebook page posts into CMS",
+  "main": "facebook-to-cms-importer.js",
+  "scripts": {
+    "start": "node facebook-to-cms-importer.js"
+  },
+  "dependencies": {
+    "puppeteer": "^21.7.0",
+    "axios": "^1.6.5",
+    "form-data": "^4.0.0"
+  }
+}

@@ -128,6 +128,7 @@ async function scrapeFacebookPosts() {
 
   const browser = await puppeteer.launch({
     headless: 'new',
+    executablePath: process.env.CHROME_PATH || '/root/.cache/ms-playwright/chromium-1194/chrome-linux/chrome',
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
